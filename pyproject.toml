@@ -7,9 +7,21 @@ license = "MIT"
 
 [tool.poetry.dependencies]
 python = "^3.9"
+prompt-toolkit = "^3.0.24"
+Pygments = "^2.11.2"
+google-ads = "^14.1.0"
+click = "^8.0.3"
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.5"
+black = "^21.12b0"
+ipython = "^8.0.1"
+
+[tool.poetry.scripts]
+gaql = "gaql_console.console:main"
+
+[tool.black]
+line-length = 119
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
