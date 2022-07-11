@@ -30,14 +30,15 @@ def parse_extra_args(extra_args: List[str]) -> Tuple[List[str], dict[str, str]]:
 
 
 @click.command(context_settings={"ignore_unknown_options": True, "allow_extra_args": True})
+@click.option("--context-source", type=click.Choice(context.CONTEXT_CHOICES), default="anywhere")
 @click.pass_context
 @exceptions.handle_console_errors()
-def main(click_ctx: click.Context):
+def main(click_ctx: click.Context, context_source: str):
     args, kwargs = parse_extra_args(click_ctx.args)
     try:
-        ctx = context.from_anywhere(*args, **kwargs)
+        ctx = context.build_context(context_source, *args, **kwargs)
     except ValueError as exc:
-        error(str(exc))
+        error(exc.args[0])
         exit(1)
 
     session = shortcuts.PromptSession()
