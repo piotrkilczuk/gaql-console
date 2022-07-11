@@ -1,3 +1,3 @@
-from gaql_console.console import main
+from gaql_console import console
 
-main()
+console.main()

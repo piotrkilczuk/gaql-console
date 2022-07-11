@@ -1,61 +1,56 @@
-from os import environ
-from sys import stderr
+import sys
+from typing import List, Tuple
 
-from click import secho
-from prompt_toolkit import PromptSession
-from prompt_toolkit.lexers import PygmentsLexer
+import click
+from prompt_toolkit.lexers import pygments
+from prompt_toolkit import shortcuts
 
-from gaql_console import VERSION, context
-from gaql_console.api_client import GAQLClient
-from gaql_console.context import GAQLContext
-from gaql_console.exceptions import QueryException, handle_console_errors
-from gaql_console.grammar import GAQLLexer, GAQLCompleter
+import gaql_console
+from gaql_console import exceptions, context, grammar, api_client
 
 
 def error(message: str):
-    secho(message=message, fg="red", file=stderr)
+    click.secho(message=message, fg="red", file=sys.stderr)
 
 
 def info(message: str):
-    secho(message=message, fg="blue", file=stderr)
+    click.secho(message=message, fg="blue", file=sys.stderr)
 
 
-def ensure_envvars_set() -> GAQLContext:
-    all = True
-    collected = {}
-
-    for var_lowercase in GAQLContext._fields:
-        var_uppercase = var_lowercase.upper()
-        if var_uppercase not in environ:
-            error(f"${var_uppercase} not set")
-            all = False
+def parse_extra_args(extra_args: List[str]) -> Tuple[List[str], dict[str, str]]:
+    args = []
+    kwargs = {}
+    for extra_arg in extra_args:
+        if extra_arg.startswith("--"):
+            name, value = extra_arg.lstrip("--").split("=", maxsplit=1)
+            kwargs[name] = value
         else:
-            collected[var_lowercase] = environ[var_uppercase]
-
-    if not all:
-        raise ValueError("Necessary environment variables have not been set.")
-
-    return GAQLContext(**collected)
+            args.append(extra_arg)
+    return args, kwargs
 
 
-@handle_console_errors()
-def main():
-    # @TODO: from callable
-    # @TODO: from argparse
-    # @TODO: from pyproject.toml
-    ctx = context.from_envvars()
+@click.command(context_settings={"ignore_unknown_options": True, "allow_extra_args": True})
+@click.pass_context
+@exceptions.handle_console_errors()
+def main(click_ctx: click.Context):
+    args, kwargs = parse_extra_args(click_ctx.args)
+    try:
+        ctx = context.from_anywhere(*args, **kwargs)
+    except ValueError as exc:
+        error(str(exc))
+        exit(1)
 
-    session = PromptSession()
+    session = shortcuts.PromptSession()
 
-    version_str = ".".join([str(v) for v in VERSION])
+    version_str = ".".join([str(v) for v in gaql_console.VERSION])
     info(f"Welcome to GAQL Console v{version_str}.")
     info("Use [Alt+Enter] or [Esc+Enter] to submit. [^D] to quit.\n")
 
     while True:
         gaql = session.prompt(
             "GAQL> ",
-            lexer=PygmentsLexer(GAQLLexer),
-            completer=GAQLCompleter(),
+            lexer=pygments.PygmentsLexer(grammar.GAQLLexer),
+            completer=grammar.GAQLCompleter(),
             multiline=True,
             # @TODO: better key bindings
         ).strip()
@@ -63,14 +58,14 @@ def main():
             info("Empty GAQL query. Use [^D] to quit.\n")
             continue
 
-        ads_client = GAQLClient(ctx)
+        ads_client = api_client.GAQLClient(ctx)
 
         try:
             responses = ads_client.query(gaql)
             for response in responses:
                 print(response)
 
-        except QueryException as exc:
+        except exceptions.QueryException as exc:
             error(exc.message)
 
         except KeyboardInterrupt:
