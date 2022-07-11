@@ -1,7 +1,7 @@
-from contextlib import contextmanager
+import contextlib
 
 
-@contextmanager
+@contextlib.contextmanager
 def handle_console_errors():
     try:
         yield

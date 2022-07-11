@@ -1,9 +1,9 @@
 import importlib
 import os
 import pathlib
-import toml
-
 from typing import NamedTuple, Mapping
+
+import toml
 
 
 class GAQLContext(NamedTuple):
