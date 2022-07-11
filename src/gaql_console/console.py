@@ -5,7 +5,7 @@ from click import secho
 from prompt_toolkit import PromptSession
 from prompt_toolkit.lexers import PygmentsLexer
 
-from gaql_console import VERSION
+from gaql_console import VERSION, context
 from gaql_console.api_client import GAQLClient
 from gaql_console.context import GAQLContext
 from gaql_console.exceptions import QueryException, handle_console_errors
@@ -40,8 +40,10 @@ def ensure_envvars_set() -> GAQLContext:
 
 @handle_console_errors()
 def main():
-    # @TODO: allow for passing via argparse
-    context = ensure_envvars_set()
+    # @TODO: from callable
+    # @TODO: from argparse
+    # @TODO: from pyproject.toml
+    ctx = context.from_envvars()
 
     session = PromptSession()
 
@@ -61,7 +63,7 @@ def main():
             info("Empty GAQL query. Use [^D] to quit.\n")
             continue
 
-        ads_client = GAQLClient(context)
+        ads_client = GAQLClient(ctx)
 
         try:
             responses = ads_client.query(gaql)
