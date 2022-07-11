@@ -31,14 +31,18 @@ def parse_extra_args(extra_args: List[str]) -> Tuple[List[str], dict[str, str]]:
 
 @click.command(context_settings={"ignore_unknown_options": True, "allow_extra_args": True})
 @click.option("--context-source", type=click.Choice(context.CONTEXT_CHOICES), default="anywhere")
+@click.option("--verbose", "-v", is_flag=True)
 @click.pass_context
 @exceptions.handle_console_errors()
-def main(click_ctx: click.Context, context_source: str):
+def main(click_ctx: click.Context, context_source: str, verbose: bool = False):
     args, kwargs = parse_extra_args(click_ctx.args)
     try:
         ctx = context.build_context(context_source, *args, **kwargs)
-    except ValueError as exc:
-        error(exc.args[0])
+    except exceptions.ContextException as exc:
+        error(exc.message)
+        if verbose:
+            for inner_exc in exc.inner_exceptions:
+                error(inner_exc.message)
         exit(1)
 
     session = shortcuts.PromptSession()
