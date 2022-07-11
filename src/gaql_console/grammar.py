@@ -1,9 +1,8 @@
 from typing import Iterable
 
-from prompt_toolkit.completion import WordCompleter, Completer, Completion, CompleteEvent
-from prompt_toolkit.document import Document
-from pygments.lexer import RegexLexer
-from pygments.token import Whitespace, Keyword, Name, Operator, Punctuation
+from prompt_toolkit import completion, document
+from prompt_toolkit.completion import word_completer
+from pygments import lexer, token
 
 FUNCTIONS = {
     "LAST_14_DAYS",
@@ -38,7 +37,7 @@ OPERATORS = {
 }
 
 
-class GAQLLexer(RegexLexer):
+class GAQLLexer(lexer.RegexLexer):
     """
     See: https://developers.google.com/google-ads/api/docs/query/grammar
     """
@@ -47,28 +46,28 @@ class GAQLLexer(RegexLexer):
     aliases = ["gaql"]
     filenames = ["*.gaql"]
 
-    function_tokens = [(f"(?i)({token})", Keyword) for token in FUNCTIONS]
-    keyword_tokens = [(f"(?i)({token})", Keyword) for token in KEYWORDS]
-    operator_tokens = [(f"(?i)({token})", Operator) for token in OPERATORS]
+    function_tokens = [(f"(?i)({t})", token.Keyword) for t in FUNCTIONS]
+    keyword_tokens = [(f"(?i)({t})", token.Keyword) for t in KEYWORDS]
+    operator_tokens = [(f"(?i)({t})", token.Operator) for t in OPERATORS]
 
     tokens = {
         "root": [
-            (r"\s+", Whitespace),
-            (r",", Punctuation),
+            (r"\s+", token.Whitespace),
+            (r",", token.Punctuation),
             *keyword_tokens,
-            (r"(=|!=|>|>=|<|<=)", Operator),
+            (r"(=|!=|>|>=|<|<=)", token.Operator),
             *operator_tokens,
             *function_tokens,
-            (r"([\w.]+)", Name.Attribute),
+            (r"([\w.]+)", token.Name.Attribute),
         ],
     }
 
 
-gaql_autocompleter = WordCompleter([*FUNCTIONS, *KEYWORDS, *OPERATORS], ignore_case=True)
+gaql_autocompleter = word_completer.WordCompleter([*FUNCTIONS, *KEYWORDS, *OPERATORS], ignore_case=True)
 
 
-class GAQLCompleter(Completer):
-    def _complete_with_rewind(self, document: Document, word: str) -> Iterable[Completion]:
+class GAQLCompleter(completion.Completer):
+    def _complete_with_rewind(self, document: document.Document, word: str) -> Iterable[completion.Completion]:
         words = document.text_before_cursor.rsplit(maxsplit=1)
         if not words:
             return
@@ -79,20 +78,22 @@ class GAQLCompleter(Completer):
         if len_final_word == len(word):
             return
         if final_word == word[:len_final_word]:
-            yield Completion(word, -len_final_word)
+            yield completion.Completion(word, -len_final_word)
 
-    def get_completions(self, document: Document, complete_event: CompleteEvent) -> Iterable[Completion]:
-        text_before = document.text_before_cursor
+    def get_completions(
+        self, _document: document.Document, complete_event: completion.CompleteEvent
+    ) -> Iterable[completion.Completion]:
+        text_before = _document.text_before_cursor
 
         if "SELECT" not in text_before:
-            yield from self._complete_with_rewind(document, "SELECT")
+            yield from self._complete_with_rewind(_document, "SELECT")
 
         # FROM must come after any fields
         # fields have to have a dot in the lookup path
         if "." in text_before and "FROM" not in text_before:
-            yield from self._complete_with_rewind(document, "FROM")
+            yield from self._complete_with_rewind(_document, "FROM")
 
         if "FROM" in text_before:
-            yield from self._complete_with_rewind(document, "WHERE")
-            yield from self._complete_with_rewind(document, "ORDER BY")
-            yield from self._complete_with_rewind(document, "LIMIT")
+            yield from self._complete_with_rewind(_document, "WHERE")
+            yield from self._complete_with_rewind(_document, "ORDER BY")
+            yield from self._complete_with_rewind(_document, "LIMIT")

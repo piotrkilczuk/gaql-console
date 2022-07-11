@@ -1,12 +1,11 @@
-from importlib import import_module
+import importlib
 from typing import Iterator
 
-from google.ads.googleads.client import GoogleAdsClient
-from google.ads.googleads.errors import GoogleAdsException
-from google.oauth2.credentials import Credentials
+from google.ads.googleads import client as ads_client, errors as ads_errors
+from google.oauth2 import credentials
 
-from gaql_console.context import GAQLContext
-from gaql_console.exceptions import QueryException
+from gaql_console import context, exceptions
+
 
 # @TODO: Make me customizable
 API_VERSION = "v9"
@@ -15,7 +14,7 @@ API_VERSION = "v9"
 def import_for_version(suffix: str):
     module_path, member = suffix.rsplit(".", maxsplit=1)
     path = f"google.ads.googleads.{API_VERSION}.{module_path}"
-    module = import_module(path)
+    module = importlib.import_module(path)
     member = getattr(module, member)
     return member
 
@@ -24,22 +23,22 @@ GoogleAdsRow = import_for_version("services.types.google_ads_service.GoogleAdsRo
 
 
 class GAQLClient:
-    _context: GAQLContext
-    _client: GoogleAdsClient
+    _context: context.GAQLContext
+    _client: ads_client.GoogleAdsClient
 
-    def __init__(self, context: GAQLContext):
-        self._context = context
-        credentials = Credentials.from_authorized_user_info(
+    def __init__(self, _context: context.GAQLContext):
+        self._context = _context
+        _credentials = credentials.Credentials.from_authorized_user_info(
             {
-                "refresh_token": context.refresh_token,
-                "client_id": context.client_id,
-                "client_secret": context.client_secret,
+                "refresh_token": _context.refresh_token,
+                "client_id": _context.client_id,
+                "client_secret": _context.client_secret,
             }
         )
-        self._client = GoogleAdsClient(
-            credentials=credentials,
-            developer_token=context.developer_token,
-            login_customer_id=context.login_customer_id,
+        self._client = ads_client.GoogleAdsClient(
+            credentials=_credentials,
+            developer_token=_context.developer_token,
+            login_customer_id=_context.login_customer_id,
             version=API_VERSION,
         )
 
@@ -51,17 +50,17 @@ class GAQLClient:
             streaming_response_iterator = service.search_stream(
                 customer_id=self._context.client_customer_id, query=gaql
             )
-        except GoogleAdsException as exc:
-            raise QueryException(exc.failure.errors[0].message)
+        except ads_errors.GoogleAdsException as exc:
+            raise exceptions.QueryException(exc.failure.errors[0].message)
 
         for response in streaming_response_iterator:
             for result in response.results:
                 yield result
 
 
-def client(context: GAQLContext) -> GoogleAdsClient:
-    return GoogleAdsClient(
+def client(_context: context.GAQLContext) -> ads_client.GoogleAdsClient:
+    return ads_client.GoogleAdsClient(
         credentials=None,
-        developer_token=context.developer_token,
+        developer_token=_context.developer_token,
         version=API_VERSION,
     )
