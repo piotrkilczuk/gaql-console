@@ -11,6 +11,7 @@ prompt-toolkit = "^3.0.24"
 Pygments = "^2.11.2"
 google-ads = "^17.0.0"
 click = "^8.0.3"
+toml = "^0.10.2"
 
 [tool.poetry.dev-dependencies]
 pytest = "^7.1.2"
