@@ -24,7 +24,7 @@ gaql = "gaql_console.console:main"
 line-length = 119
 
 [tool.gaql-console]
-context-callable = ""
+context-callable = "dummy_context_callable:provide_context"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
