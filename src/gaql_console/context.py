@@ -22,7 +22,7 @@ def ensure_full_context(candidate: Mapping) -> GAQLContext:
     if missing:
         missing_str = ", ".join(missing)
         raise ValueError(f"Missing following context values: {missing_str}", missing)
-    return GAQLContext(**{k: str(v) for k, v in candidate.items()})
+    return GAQLContext(**{k: str(candidate[k]) for k in required})
 
 
 def parse_pyproject_toml() -> dict:
@@ -56,22 +56,9 @@ def from_anywhere(*args, **kwargs) -> GAQLContext:
 
 
 def from_envvars(*args, **kwargs) -> GAQLContext:
-    required = GAQLContext._fields
-    collected = {}
-    missing = set()
-
-    for var_lowercase in required:
-        var_uppercase = var_lowercase.upper()
-        if var_uppercase not in os.environ:
-            missing.add(var_lowercase)
-        else:
-            collected[var_lowercase] = os.environ[var_uppercase]
-
-    if missing:
-        missing_str = ", ".join(missing)
-        raise ValueError(f"Required vars not set: {missing_str}", missing)
-
-    return GAQLContext(**collected)
+    prefix = "GAQL_"
+    raw_context = {k.lstrip(prefix).lower(): os.environ[k] for k in os.environ if k.startswith(prefix)}
+    return ensure_full_context(raw_context)
 
 
 def from_callable(*args, **kwargs) -> GAQLContext:
