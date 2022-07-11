@@ -38,6 +38,10 @@ def parse_pyproject_toml() -> dict:
             raise ValueError("No [tool.gaql-console] section in pyproject.toml.")
 
 
+def build_context(source: str, *args, **kwargs) -> GAQLContext:
+    return CONTEXT_CHOICES[source](*args, **kwargs)
+
+
 def from_anywhere(*args, **kwargs) -> GAQLContext:
     # @TODO: from argparse
     # @TODO: from pyproject.toml
@@ -84,3 +88,10 @@ def from_callable(*args, **kwargs) -> GAQLContext:
 
     raw_context = callable(*args, **kwargs)
     return ensure_full_context(raw_context)
+
+
+CONTEXT_CHOICES = {
+    "anywhere": from_anywhere,
+    "envvars": from_envvars,
+    "callable": from_callable,
+}
