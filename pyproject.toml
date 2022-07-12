@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "gaql-console"
-version = "0.1.0"
+version = "0.1.1"
 description = "Google Ads Query Language Interactive Console"
 authors = ["Piotr Kilczuk <piotr@kilczuk.dev>"]
 license = "MIT"
