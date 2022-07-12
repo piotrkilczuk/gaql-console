@@ -1,4 +1,5 @@
 import sys
+import time
 from typing import List, Tuple
 
 import click
@@ -7,6 +8,22 @@ from prompt_toolkit import shortcuts
 
 import gaql_console
 from gaql_console import exceptions, context, grammar, api_client
+
+
+class Timed:
+    start: float
+    end: float
+
+    def __enter__(self):
+        self.start = time.time()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.end = time.time()
+
+    @property
+    def elapsed(self) -> float:
+        return self.end - self.start
 
 
 def error(message: str):
@@ -66,9 +83,11 @@ def main(click_ctx: click.Context, context_source: str, verbose: bool = False):
         ads_client = api_client.GAQLClient(ctx)
 
         try:
-            responses = ads_client.query(gaql)
-            for response in responses:
-                print(response)
+            with Timed() as t:
+                responses = ads_client.query(gaql)
+                for response in responses:
+                    print(response)
+            print(f"Took {t.elapsed:.3f} seconds\n")
 
         except exceptions.QueryException as exc:
             error(exc.message)
