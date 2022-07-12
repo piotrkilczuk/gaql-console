@@ -1,0 +1,43 @@
+name: PYPI Upload
+
+on:
+  - workflow_dispatch
+
+jobs:
+  pypi_upload:
+    name: pypi-upload
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          lfs: false
+          submodules: false
+      - name: Setup Python
+        uses: actions/setup-python@v1
+        with:
+          python-version: 3.9
+      - name: Setup Pip Cache
+        uses: actions/cache@v2
+        with:
+          path: ${{ env.pythonLocation }}
+          key: pip-${{ hashFiles('.github/**/*.yaml') }}
+      - name: Setup Poetry Cache
+        uses: actions/cache@v2
+        with:
+          path: /home/runner/.cache/pypoetry/virtualenvs
+          key: poetry-${{ hashFiles('poetry.lock') }}
+      - name: Install dependencies
+        run: |
+          pip install poetry
+          poetry install
+      - name: Build Package
+        run: |
+          poetry build
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@master
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_API_TOKEN }}
+          skip_existing: true
+          verbose: true
