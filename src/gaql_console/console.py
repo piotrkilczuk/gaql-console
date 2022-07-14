@@ -1,10 +1,11 @@
+import pathlib
 import sys
 import time
 from typing import List, Tuple
 
 import click
 from prompt_toolkit.lexers import pygments
-from prompt_toolkit import shortcuts
+from prompt_toolkit import shortcuts, history
 
 import gaql_console
 from gaql_console import exceptions, context, grammar, api_client
@@ -62,7 +63,11 @@ def main(click_ctx: click.Context, context_source: str, verbose: bool = False):
                 error(inner_exc.message)
         exit(1)
 
-    session = shortcuts.PromptSession()
+    history_file = pathlib.Path.home() / ".gaql_console"
+    history_file.touch(0o600)
+    session_history = history.FileHistory(str(history_file))
+
+    session = shortcuts.PromptSession(history=session_history)
 
     version_str = ".".join([str(v) for v in gaql_console.VERSION])
     info(f"Welcome to GAQL Console v{version_str}.")
