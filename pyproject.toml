@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "gaql-console"
-version = "0.1.2"
+version = "0.1.3"
 description = "Google Ads Query Language Interactive Console"
 authors = ["Piotr Kilczuk <piotr@kilczuk.dev>"]
 license = "MIT"
@@ -9,7 +9,7 @@ license = "MIT"
 python = "^3.9"
 prompt-toolkit = "^3.0.24"
 Pygments = "^2.11.2"
-google-ads = "^17.0.0"
+google-ads = "^19.0.0"
 click = "^8.0.3"
 toml = "^0.10.2"
 
