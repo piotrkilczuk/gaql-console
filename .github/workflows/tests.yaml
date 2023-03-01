@@ -35,3 +35,6 @@ jobs:
       - name: Smoke test
         run: |
           poetry run gaql --help
+      - name: Build Checks
+        run: |
+          poetry run python .github/scripts/build_checks.py
