@@ -31,6 +31,9 @@ jobs:
         run: |
           pip install poetry
           poetry install
+      - name: Build Checks
+        run: |
+          poetry run python .github/scripts/build_checks.py
       - name: Build Package
         run: |
           poetry build
