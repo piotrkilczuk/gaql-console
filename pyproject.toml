@@ -13,13 +13,13 @@ google-ads = {version = "^23.1.0", python = ">=3.8,<3.13"}
 click = "^8.1.7"
 toml = "^0.10.2"
 
-[tool.poetry.scripts]
-gaql = "gaql_console.console:main"
-
-[tool.poetry.group.dev.dependencies]
+[tool.poetry.dev-dependencies]
 pytest = "^8.3.2"
 black = "^23.3.0"
 ipython = "^8.14.0"
+
+[tool.poetry.scripts]
+gaql = "gaql_console.console:main"
 
 [tool.black]
 line-length = 119
