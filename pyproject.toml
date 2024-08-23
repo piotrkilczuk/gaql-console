@@ -15,8 +15,7 @@ toml = "^0.10.2"
 
 [tool.poetry.dev-dependencies]
 pytest = "^8.3.2"
-black = "^23.3.0"
-ipython = "^8.14.0"
+black = "^24.8.0"
 
 [tool.poetry.scripts]
 gaql = "gaql_console.console:main"
