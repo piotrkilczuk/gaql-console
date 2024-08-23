@@ -7,7 +7,7 @@ license = "MIT"
 
 [tool.poetry.dependencies]
 python = "^3.9"
-prompt-toolkit = "^3.0.24"
+prompt-toolkit = "^3.0.47"
 Pygments = "^2.11.2"
 google-ads = {version = "^23.1.0", python = ">=3.8,<3.13"}
 click = "^8.0.3"
