@@ -18,12 +18,12 @@ jobs:
         with:
           python-version: 3.9
       - name: Setup Pip Cache
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: ${{ env.pythonLocation }}
           key: pip-${{ hashFiles('.github/**/*.yaml') }}
       - name: Setup Poetry Cache
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: /home/runner/.cache/pypoetry/virtualenvs
           key: poetry-${{ hashFiles('poetry.lock') }}

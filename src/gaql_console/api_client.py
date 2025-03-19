@@ -8,7 +8,7 @@ from gaql_console import context, exceptions
 
 
 # @TODO: Make me customizable
-API_VERSION = "v17"
+API_VERSION = "v19"
 
 
 def import_for_version(suffix: str):
