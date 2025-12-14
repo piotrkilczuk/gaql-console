@@ -1,12 +1,15 @@
-# gaql_console
+# GAQL Console
 
-I built this for my own benefit to see how far I can go in a half day having no understanding of REPLs, lexing and 
-other concepts required to build this kind of tool.
+An interactive command-line console for executing Google Ads Query Language (GAQL) queries.
 
-It is a working proof of concept, however, limited in features.
+## Features
 
-What I'd like to introduce at some point:
+- Interactive REPL with multiline query support
+- Syntax highlighting for GAQL
+- Command history (persisted across sessions)
+- Query autocompletion
+- Flexible credential configuration
 
-* better autocomplete
-* persistence options (like write JSON to disk)
-* visualisation options (not just printing the result to screen but folding/unfolding etc.)
+## License
+
+MIT
