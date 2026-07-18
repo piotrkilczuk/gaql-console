@@ -50,9 +50,10 @@ def parse_extra_args(extra_args: List[str]) -> Tuple[List[str], dict[str, str]]:
 @click.command(context_settings={"ignore_unknown_options": True, "allow_extra_args": True})
 @click.option("--context-source", type=click.Choice(context.CONTEXT_CHOICES), default="anywhere")
 @click.option("--verbose", "-v", is_flag=True)
+@click.option("-c", "--command", "command", default=None, help="Execute a single GAQL query and exit, like psql -c.")
 @click.pass_context
 @exceptions.handle_console_errors()
-def main(click_ctx: click.Context, context_source: str, verbose: bool = False):
+def main(click_ctx: click.Context, context_source: str, verbose: bool = False, command: str = None):
     args, kwargs = parse_extra_args(click_ctx.args)
     try:
         ctx = context.build_context(context_source, *args, **kwargs)
@@ -62,6 +63,17 @@ def main(click_ctx: click.Context, context_source: str, verbose: bool = False):
             for inner_exc in exc.inner_exceptions:
                 error(inner_exc.message)
         exit(1)
+
+    ads_client = api_client.GAQLClient(ctx)
+
+    if command is not None:
+        try:
+            for response in ads_client.query(command):
+                print(response)
+        except exceptions.QueryException as exc:
+            error(exc.message)
+            exit(1)
+        return
 
     history_file = pathlib.Path.home() / ".gaql_console"
     history_file.touch(0o600)
@@ -85,12 +97,9 @@ def main(click_ctx: click.Context, context_source: str, verbose: bool = False):
             info("Empty GAQL query. Use [^D] to quit.\n")
             continue
 
-        ads_client = api_client.GAQLClient(ctx)
-
         try:
             with Timed() as t:
-                responses = ads_client.query(gaql)
-                for response in responses:
+                for response in ads_client.query(gaql):
                     print(response)
             print(f"Took {t.elapsed:.3f} seconds\n")
 
