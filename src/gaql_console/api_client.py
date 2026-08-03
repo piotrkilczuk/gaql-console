@@ -1,8 +1,9 @@
 import importlib
-from typing import Iterator
+from typing import Iterator, Tuple
 
 from google.ads.googleads import client as ads_client, errors as ads_errors
 from google.oauth2 import credentials
+from google.protobuf import field_mask_pb2
 
 from gaql_console import context, exceptions
 
@@ -42,7 +43,7 @@ class GAQLClient:
             version=API_VERSION,
         )
 
-    def query(self, gaql: str) -> Iterator[GoogleAdsRow]:
+    def query(self, gaql: str) -> Iterator[Tuple[field_mask_pb2.FieldMask, GoogleAdsRow]]:
         # keep this in scope - see https://github.com/googleads/google-ads-python/issues/384
         service = self._client.get_service("GoogleAdsService")
 
@@ -55,7 +56,7 @@ class GAQLClient:
 
         for response in streaming_response_iterator:
             for result in response.results:
-                yield result
+                yield response.field_mask, result
 
 
 def client(_context: context.GAQLContext) -> ads_client.GoogleAdsClient:
