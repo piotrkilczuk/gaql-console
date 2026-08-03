@@ -1,26 +1,10 @@
-import importlib
 from typing import Iterator, Tuple
 
 from google.ads.googleads import client as ads_client, errors as ads_errors
 from google.oauth2 import credentials
 from google.protobuf import field_mask_pb2
 
-from gaql_console import context, exceptions
-
-
-# @TODO: Make me customizable
-API_VERSION = "v21"
-
-
-def import_for_version(suffix: str):
-    module_path, member = suffix.rsplit(".", maxsplit=1)
-    path = f"google.ads.googleads.{API_VERSION}.{module_path}"
-    module = importlib.import_module(path)
-    member = getattr(module, member)
-    return member
-
-
-GoogleAdsRow = import_for_version("services.types.google_ads_service.GoogleAdsRow")
+from gaql_console import ads_types, context, exceptions
 
 
 class GAQLClient:
@@ -40,10 +24,10 @@ class GAQLClient:
             credentials=_credentials,
             developer_token=_context.developer_token,
             login_customer_id=_context.login_customer_id,
-            version=API_VERSION,
+            version=ads_types.API_VERSION,
         )
 
-    def query(self, gaql: str) -> Iterator[Tuple[field_mask_pb2.FieldMask, GoogleAdsRow]]:
+    def query(self, gaql: str) -> Iterator[Tuple[field_mask_pb2.FieldMask, ads_types.GoogleAdsRow]]:
         # keep this in scope - see https://github.com/googleads/google-ads-python/issues/384
         service = self._client.get_service("GoogleAdsService")
 

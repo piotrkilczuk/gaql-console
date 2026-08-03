@@ -1,7 +1,6 @@
 import pathlib
 import sys
 import time
-from typing import List, Tuple
 
 import click
 from prompt_toolkit.lexers import pygments
@@ -27,7 +26,7 @@ class Timed:
         return self.end - self.start
 
 
-def parse_extra_args(extra_args: List[str]) -> Tuple[List[str], dict[str, str]]:
+def parse_extra_args(extra_args: list[str]) -> tuple[list[str], dict[str, str]]:
     args = []
     kwargs = {}
     for extra_arg in extra_args:

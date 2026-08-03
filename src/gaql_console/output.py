@@ -6,12 +6,12 @@ import enum
 import json
 import pathlib
 import sys
-from typing import Dict, List, TextIO, Type
+from typing import TextIO
 
 import click
 from google.protobuf import field_mask_pb2
 
-from gaql_console import api_client
+from gaql_console import ads_types
 
 
 def error(message: str) -> None:
@@ -22,19 +22,17 @@ def info(message: str) -> None:
     click.secho(message=message, fg="blue", file=sys.stderr)
 
 
-def extract_value(row: api_client.GoogleAdsRow, path: str) -> object:
+def extract_value(row: ads_types.GoogleAdsRow, path: str) -> ads_types.GoogleAdsScalar | list[ads_types.GoogleAdsScalar]:
     value: object = row
     for part in path.split("."):
         value = getattr(value, part)
-    if isinstance(value, enum.Enum):
-        return value.name
-    if hasattr(value, "__len__") and not isinstance(value, str):
-        return list(value)  # repeated fields -> plain list
-    return value
+    if hasattr(value, "__len__") and not isinstance(value, (str, enum.Enum)):
+        return [item.name if isinstance(item, enum.Enum) else item for item in value]
+    return value.name if isinstance(value, enum.Enum) else value
 
 
-def build_nested(paths: List[str], row: api_client.GoogleAdsRow) -> dict:
-    nested: dict = {}
+def build_nested(paths: list[str], row: ads_types.GoogleAdsRow) -> ads_types.GoogleAdsNestedDict:
+    nested: ads_types.GoogleAdsNestedDict = {}
     for path in paths:
         *segments, leaf = path.split(".")
         target = nested
@@ -44,13 +42,13 @@ def build_nested(paths: List[str], row: api_client.GoogleAdsRow) -> dict:
     return nested
 
 
-class OutputFormat(enum.Enum):
+class OutputFormat(str, enum.Enum):
     TXT = "txt"
     JSON = "json"
     CSV = "csv"
 
 
-EXTENSION_FORMATS: Dict[str, OutputFormat] = {
+EXTENSION_FORMATS: dict[str, OutputFormat] = {
     ".csv": OutputFormat.CSV,
     ".json": OutputFormat.JSON,
     ".jsonl": OutputFormat.JSON,
@@ -69,7 +67,7 @@ class OutputStream(abc.ABC):
         """Called once per query execution, before any rows are written."""
 
     @abc.abstractmethod
-    def write_row(self, field_mask: field_mask_pb2.FieldMask, row: api_client.GoogleAdsRow) -> None:
+    def write_row(self, field_mask: field_mask_pb2.FieldMask, row: ads_types.GoogleAdsRow) -> None:
         ...
 
     def close(self) -> None:
@@ -114,12 +112,12 @@ class OutputStream(abc.ABC):
 
 
 class TxtOutputStream(OutputStream):
-    def write_row(self, field_mask: field_mask_pb2.FieldMask, row: api_client.GoogleAdsRow) -> None:
+    def write_row(self, field_mask: field_mask_pb2.FieldMask, row: ads_types.GoogleAdsRow) -> None:
         print(row, file=self.file)
 
 
 class JsonOutputStream(OutputStream):
-    def write_row(self, field_mask: field_mask_pb2.FieldMask, row: api_client.GoogleAdsRow) -> None:
+    def write_row(self, field_mask: field_mask_pb2.FieldMask, row: ads_types.GoogleAdsRow) -> None:
         print(json.dumps(build_nested(list(field_mask.paths), row)), file=self.file)
 
 
@@ -131,7 +129,7 @@ class CsvOutputStream(OutputStream):
     def begin_query(self) -> None:
         self._header_written = False
 
-    def write_row(self, field_mask: field_mask_pb2.FieldMask, row: api_client.GoogleAdsRow) -> None:
+    def write_row(self, field_mask: field_mask_pb2.FieldMask, row: ads_types.GoogleAdsRow) -> None:
         writer = csv.writer(self.file)
         if not self._header_written:
             writer.writerow(field_mask.paths)
@@ -139,8 +137,7 @@ class CsvOutputStream(OutputStream):
         writer.writerow([extract_value(row, path) for path in field_mask.paths])
 
 
-
-FORMAT_CLASSES: Dict[OutputFormat, Type[OutputStream]] = {
+FORMAT_CLASSES: dict[OutputFormat, type[OutputStream]] = {
     OutputFormat.TXT: TxtOutputStream,
     OutputFormat.JSON: JsonOutputStream,
     OutputFormat.CSV: CsvOutputStream,
