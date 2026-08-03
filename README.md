@@ -10,6 +10,7 @@ An interactive command-line console for executing Google Ads Query Language (GAQ
 - Query autocompletion
 - Flexible credential configuration
 - Non-interactive single query execution via `-c`/`--command`, like `psql -c`
+- Redirect query output to a txt/json/csv file via `\o`, like `psql \o`
 
 ## License
 
