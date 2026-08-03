@@ -8,7 +8,7 @@ from prompt_toolkit.lexers import pygments
 from prompt_toolkit import shortcuts, history
 
 import gaql_console
-from gaql_console import exceptions, context, grammar, api_client
+from gaql_console import api_client, context, exceptions, grammar, output
 
 
 class Timed:
@@ -25,14 +25,6 @@ class Timed:
     @property
     def elapsed(self) -> float:
         return self.end - self.start
-
-
-def error(message: str):
-    click.secho(message=message, fg="red", file=sys.stderr)
-
-
-def info(message: str):
-    click.secho(message=message, fg="blue", file=sys.stderr)
 
 
 def parse_extra_args(extra_args: List[str]) -> Tuple[List[str], dict[str, str]]:
@@ -58,20 +50,20 @@ def main(click_ctx: click.Context, context_source: str, verbose: bool = False, c
     try:
         ctx = context.build_context(context_source, *args, **kwargs)
     except exceptions.ContextException as exc:
-        error(exc.message)
+        output.error(exc.message)
         if verbose:
             for inner_exc in exc.inner_exceptions:
-                error(inner_exc.message)
+                output.error(inner_exc.message)
         exit(1)
 
     ads_client = api_client.GAQLClient(ctx)
 
     if command is not None:
         try:
-            for response in ads_client.query(command):
+            for _, response in ads_client.query(command):
                 print(response)
         except exceptions.QueryException as exc:
-            error(exc.message)
+            output.error(exc.message)
             exit(1)
         return
 
@@ -82,30 +74,41 @@ def main(click_ctx: click.Context, context_source: str, verbose: bool = False, c
     session = shortcuts.PromptSession(history=session_history)
 
     version_str = ".".join([str(v) for v in gaql_console.VERSION])
-    info(f"Welcome to GAQL Console v{version_str}.")
-    info("Use [Alt+Enter] or [Esc+Enter] to submit. [^D] to quit.\n")
+    output.info(f"Welcome to GAQL Console v{version_str}.")
+    output.info("Use [Alt+Enter] or [Esc+Enter] to submit. [^D] to quit.\n")
 
-    while True:
-        gaql = session.prompt(
-            "GAQL> ",
-            lexer=pygments.PygmentsLexer(grammar.GAQLLexer),
-            completer=grammar.GAQLCompleter(),
-            multiline=True,
-            # @TODO: better key bindings
-        ).strip()
-        if not gaql:
-            info("Empty GAQL query. Use [^D] to quit.\n")
-            continue
+    writable_stream: output.OutputStream = output.OutputStream.default()
 
-        try:
-            with Timed() as t:
-                for response in ads_client.query(gaql):
-                    print(response)
-            print(f"Took {t.elapsed:.3f} seconds\n")
+    try:
+        while True:
+            gaql = session.prompt(
+                "GAQL> ",
+                lexer=pygments.PygmentsLexer(grammar.GAQLLexer),
+                completer=grammar.GAQLCompleter(),
+                multiline=True,
+                # @TODO: better key bindings
+            ).strip()
 
-        except exceptions.QueryException as exc:
-            error(exc.message)
+            if not gaql:
+                output.info("Empty GAQL query. Use [^D] to quit.\n")
+                continue
+            if gaql.startswith("\\o"):
+                writable_stream = output.OutputStream.resolve(gaql, writable_stream)
+                continue
 
-        except KeyboardInterrupt:
-            error("Response stream interrupted")
-            continue
+            try:
+                with Timed() as t:
+                    writable_stream.begin_query()
+                    for field_mask, response in ads_client.query(gaql):
+                        writable_stream.write_row(field_mask, response)
+                if writable_stream.file is sys.stdout:
+                    print(f"Took {t.elapsed:.3f} seconds\n")
+
+            except exceptions.QueryException as exc:
+                output.error(exc.message)
+
+            except KeyboardInterrupt:
+                output.error("Response stream interrupted")
+                continue
+    finally:
+        writable_stream.close()
