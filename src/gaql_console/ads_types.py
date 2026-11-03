@@ -2,7 +2,7 @@ import importlib
 from typing import Union
 
 # @TODO: Make me customizable
-API_VERSION = "v23"
+API_VERSION = "v24"
 
 
 def import_for_version(suffix: str):
