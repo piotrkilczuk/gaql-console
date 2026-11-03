@@ -9,8 +9,10 @@ license = "MIT"
 python = "^3.9"
 prompt-toolkit = "^3.0.47"
 Pygments = "^2.11.2"
-# Upper bound: google-ads 33.0.0 removed Google Ads API v22, which this release uses
-google-ads = {version = ">=28.1.0,<33.0.0", python = ">=3.9,<3.15"}
+# Lower bound: google-ads 29.0.0 is the first release with Google Ads API v23.
+# google-ads drops old API versions in major releases (33.0.0 dropped v22),
+# so check its ChangeLog before relying on newer google-ads.
+google-ads = {version = ">=29.0.0", python = ">=3.9,<3.15"}
 click = "^8.1.7"
 toml = "^0.10.2"
 
