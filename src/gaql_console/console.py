@@ -42,9 +42,22 @@ def parse_extra_args(extra_args: list[str]) -> tuple[list[str], dict[str, str]]:
 @click.option("--context-source", type=click.Choice(context.CONTEXT_CHOICES), default="anywhere")
 @click.option("--verbose", "-v", is_flag=True)
 @click.option("-c", "--command", "command", default=None, help="Execute a single GAQL query and exit, like psql -c.")
+@click.option(
+    "--format",
+    "output_format",
+    type=click.Choice([f.value for f in output.OutputFormat]),
+    default=output.OutputFormat.TXT.value,
+    help="Output format for -c: txt (protobuf text), json (one object per row) or csv.",
+)
 @click.pass_context
 @exceptions.handle_console_errors()
-def main(click_ctx: click.Context, context_source: str, verbose: bool = False, command: str = None):
+def main(
+    click_ctx: click.Context,
+    context_source: str,
+    verbose: bool = False,
+    command: str = None,
+    output_format: str = output.OutputFormat.TXT.value,
+):
     args, kwargs = parse_extra_args(click_ctx.args)
     try:
         ctx = context.build_context(context_source, *args, **kwargs)
@@ -58,9 +71,11 @@ def main(click_ctx: click.Context, context_source: str, verbose: bool = False, c
     ads_client = api_client.GAQLClient(ctx)
 
     if command is not None:
+        stream = output.FORMAT_CLASSES[output.OutputFormat(output_format)](sys.stdout)
         try:
-            for _, response in ads_client.query(command):
-                print(response)
+            stream.begin_query()
+            for field_mask, response in ads_client.query(command):
+                stream.write_row(field_mask, response)
         except exceptions.QueryException as exc:
             output.error(exc.message)
             exit(1)
